@@ -4,7 +4,6 @@
 
 function id(x) { return x }
 
-// Compose functions from the right. (rightermost argument is applied first).
 function composeRight(...functions){
   functions = flatOf(functions);
   return functions.reduce((acc, cur) => function (x){ return acc(cur(x)) }, id);
@@ -15,19 +14,11 @@ function composeLeft(...functions){
   return functions.reduceRight((acc, cur) => function (x){ return acc(cur(x)) }, id);
 }
 
-// shortcut for arr.map(compose(fns))
-function mapComposeL(array, ...functions){
-  return array.map(composeLeft(functions));
-}
-
-function mapComposeR(array, ...functions){
-  return array.map(composeRight(functions));
-}
-
 /* Reducers */
 
-//Flatten an array of arbitarily nested arrays.
-function flatOf(array){
+var reducer = {}
+
+reducer.flat = function (array){
   let flatr=function (acc, cur){
     if(Array.isArray(cur)) return acc.concat(cur.reduce(flatr, []));
     return acc.concat(cur);
@@ -38,61 +29,71 @@ function flatOf(array){
 
 /* Maps */
 
-function partitionMap(array, f, predicate){
+var map = {};
+
+map.partition = function (array, f, predicate){
  let part = partition(array, predicate);
  part[0].map(f);
  return part;
 }
 
-function patternMap(array, f, predicate){
+map.pattern = function (array, f, predicate){
   return array.map(x => {
     if(predicate(x)) return f(x);
     return x;
   });
 }
 
-function deepMap(array, f){
+map.deep = function (array, f){
   return array.map(x => {
     if(Array.isArray(x)) return deepMap(x, f);
     return f(x);
   });
 }
 
-//Recurrently apply f until all elments of a satsify p, i.e. p(element) === true.
-function satisfiesMap(array, f, predicate){
+map.satisfy = function (array, f, predicate){
   let recur = function(x){ if(predicate(x)) return x; return recur(f(x)); }
   return array.map(x => recur(x));
 }
 
-function recurMap(array, f, predicate){
+map.recur = function (array, f, predicate){
   return array.map(x => {
     if(predicate(x)) return recurMap(array, f, predicate);
     return f(x);
   });
 }
 
+map.filter = function (array, f, ...predicates){
+  let ps = reducer.flat(predicates);
+  return ps.map(p => array.filter(y => p(y)));
+}
+
+map.composel = function (array, ...functions){
+  return array.map(composeLeft(functions));
+}
+
+map.composer = function (array, ...functions){
+  return array.map(composeRight(functions));
+}
+
 /* Array Segmentation */
 
-// Split an array into two parts based on a predicate.
-function partition(array, predicate){
+var list = {};
+
+list.partition = partition(array, predicate){
   let a = array.filter(x => predicate(x));
   let b = array.filter(x => !predicate(x));
 
   return [].concat([a], [b]);
 }
 
-// Split an array into n parts based on n predicates.
-function group(array, ...predicates){
+list.group = function (array, ...predicates){
   predicates = flatOf(predicates);
   if(predicates.length === 0) return array;
   return predicates.map(pred => array.filter(x => pred(x)));
 }
 
-// Split an array into n parts based n predicates with no overlap/intersection
-// Run on the inverse of the last filter.
-// If an element is captured in a prior grouping, it will not be included in subsequent groupings
-// So the order of the predicate sequence matters, as in typical pattern matching, it is best to go from spcific or narrow matches to general or wide ones.
-function arrange(array, ...predicates){
+list.arrange = function (array, ...predicates){
   let firstp = predicates[0];
   let inv = array.filter(x =>  !firstp(x));
   
@@ -104,13 +105,17 @@ function arrange(array, ...predicates){
   });
 }
 
+// => [v, v', v'']
+list.arrange.flat = function (array, ...predicates){
+  reducer.flat(list.arrange(array, predicates));  
+}
 
-//Label each element of an array.
-// Converts the array into an object with a single key:
-// {label: [arr]} 
-// If the length of labels != the length of arr, an additional parameter, unlabeled, captures 
-// the remaining arrays.
-function label(arr, ...labels){
+// => {k: []}
+list.arrange.label = function (array, predicates, labels){
+  list.label(list.arrange(array, predicates), labels);
+}
+
+list.label = function (arr, ...labels){
   let l = flatOf(labels); 
   let o = {unlabeled: []};
 
