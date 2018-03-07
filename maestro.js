@@ -1,6 +1,7 @@
 // Maestro.js
 
-exports.maestro = require('./lib/core');
-exports.maestro.reducer = require('./lib/reducer');
-exports.maestro.list = require('./lib/list');
-exports.maestro.map = require('./lib/map');
+exports.core = require('./lib/core');
+exports.reducer = require('./lib/reducer');
+exports.list = require('./lib/list');
+exports.map = require('./lib/map');
+
