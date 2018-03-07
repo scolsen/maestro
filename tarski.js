@@ -1,4 +1,4 @@
-// Maestro.js
+/* Tarski.js */
 
 exports.core = require('./lib/core');
 exports.reducer = require('./lib/reducer');
